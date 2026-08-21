@@ -1,0 +1,26 @@
+:root {
+  --yo-yla: #1c2620;
+  --yo-ala: #0e130f;
+  --kynttila: #e8a94b;
+  --kynttila-hehku: rgba(232, 169, 75, 0.45);
+  --sininen-hehku: rgba(120, 180, 220, 0.4);
+  --teksti: #f2e8d5;
+  --teksti-himmea: #b6a988;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background: radial-gradient(ellipse at 50% 40%, var(--yo-yla) 0%, var(--yo-ala) 100%);
+  color: var(--teksti);
+  font-family: 'Georgia', 'Times New Roman', serif;
+  overflow: hidden;
+}

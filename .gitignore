@@ -1,0 +1,83 @@
+# ---- Riippuvuudet ----
+node_modules/
+**/node_modules/
+.pnp
+.pnp.js
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# ---- Ympäristömuuttujat (OpenAI-avain yms. – EI KOSKAAN gittiin) ----
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# ---- Vite / frontend build ----
+dist/
+dist-ssr/
+**/dist/
+*.local
+
+# ---- Backend build / käännös ----
+build/
+**/build/
+
+# ---- Logit ----
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ---- Testit / kattavuus ----
+coverage/
+**/coverage/
+.nyc_output/
+
+# ---- Välimuistit ----
+.cache/
+.vite/
+.temp/
+.tmp/
+.eslintcache
+.parcel-cache/
+
+# ---- Editorit ja IDE:t ----
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*~
+
+# ---- Käyttöjärjestelmä ----
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ---- Muut ----
+*.pid
+*.seed
+*.pid.lock
+.node_repl_history
+.npm
+
+# ---- Lock-tiedostot ----
+package-lock.json
+**/package-lock.json

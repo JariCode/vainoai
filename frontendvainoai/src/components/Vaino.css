@@ -1,0 +1,41 @@
+.vaino-hahmo {
+  position: relative;
+  z-index: 1;
+  width: min(60vh, 460px);
+  height: min(72vh, 580px);
+  transition: filter 0.4s ease;
+}
+
+.vaino-svg {
+  width: 100%;
+  height: 100%;
+  animation: hengitys 5s ease-in-out infinite;
+}
+
+@keyframes hengitys {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-6px) scale(1.008); }
+}
+
+.tila-kuuntelee .vaino-svg {
+  filter: drop-shadow(0 0 30px var(--sininen-hehku));
+  animation: kallistu 4s ease-in-out infinite;
+}
+@keyframes kallistu {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-2deg); }
+}
+
+.tila-ajattelee .vaino-svg {
+  filter: drop-shadow(0 0 24px var(--kynttila-hehku));
+  animation-duration: 6.5s;
+}
+
+.tila-puhuu .vaino-svg {
+  filter: drop-shadow(0 0 40px var(--kynttila-hehku));
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vaino-svg, .vaino-sivu::before, .vaino-sivu::after { animation: none; }
+}

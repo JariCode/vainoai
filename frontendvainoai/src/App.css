@@ -1,0 +1,91 @@
+.vaino-sivu {
+  position: relative;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.vaino-sivu::before {
+  content: '';
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  width: 620px;
+  height: 620px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, var(--kynttila-hehku) 0%, transparent 68%);
+  filter: blur(20px);
+  animation: lepatus 5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes lepatus {
+  0%, 100% { opacity: 0.75; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
+}
+
+.vaino-sivu::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 20% 30%, rgba(232,169,75,0.5), transparent),
+    radial-gradient(1.5px 1.5px at 70% 60%, rgba(232,169,75,0.35), transparent),
+    radial-gradient(1px 1px at 40% 80%, rgba(232,169,75,0.4), transparent),
+    radial-gradient(1px 1px at 85% 25%, rgba(232,169,75,0.3), transparent);
+  pointer-events: none;
+  animation: kelluu 12s linear infinite;
+}
+
+@keyframes kelluu {
+  0% { transform: translateY(0); opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { transform: translateY(-40px); opacity: 0.6; }
+}
+
+.vaino-teksti {
+  position: relative;
+  z-index: 2;
+  max-width: 620px;
+  margin: 0 2rem;
+  text-align: center;
+  font-size: 1.7rem;
+  line-height: 1.55;
+  min-height: 3em;
+  color: var(--teksti);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+  font-style: italic;
+  letter-spacing: 0.01em;
+}
+
+.puhu-nappi {
+  position: relative;
+  z-index: 2;
+  margin-top: 1rem;
+  font-family: 'Georgia', serif;
+  font-size: 1.25rem;
+  letter-spacing: 0.06em;
+  padding: 1.1rem 2.8rem;
+  border: 1.5px solid var(--kynttila);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--kynttila);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.puhu-nappi:hover:not(:disabled) {
+  background: var(--kynttila);
+  color: var(--yo-ala);
+  box-shadow: 0 0 30px var(--kynttila-hehku);
+}
+
+.puhu-nappi:disabled {
+  opacity: 0.55;
+  cursor: default;
+  border-color: var(--teksti-himmea);
+  color: var(--teksti-himmea);
+}
