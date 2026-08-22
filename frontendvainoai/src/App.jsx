@@ -6,20 +6,20 @@ import { API_URL } from './api'
 import './App.css'
 
 function App() {
-  const [paasykoodi, setPaasykoodi] = useState(() => sessionStorage.getItem('vaino-koodi'))
+  const [paasykoodi, setPaasykoodi] = useState(() => sessionStorage.getItem('vaino-sessio'))
   const [tila, setTila] = useState('odottaa')
   const [teksti, setTeksti] = useState('Paina nappia ja juttele kanssani.')
   const [suunAvaus, setSuunAvaus] = useState(0)
   const historia = useRef([])
 
-  // Pääsykoodi myös refissä, jotta pyynnöt lukevat aina tuoreimman arvon
+  // Sessiotunnus myös refissä, jotta pyynnöt lukevat aina tuoreimman arvon
   // (ei jää jumiin vanhaan closure-arvoon).
   const koodiRef = useRef(paasykoodi)
 
-  const asetaKoodi = (koodi) => {
-    sessionStorage.setItem('vaino-koodi', koodi)
-    koodiRef.current = koodi
-    setPaasykoodi(koodi)
+  const asetaSessio = (sessio) => {
+    sessionStorage.setItem('vaino-sessio', sessio)
+    koodiRef.current = sessio
+    setPaasykoodi(sessio)
   }
 
   const haeVastaus = async (viestit) => {
@@ -27,7 +27,7 @@ function App() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-paasykoodi': koodiRef.current,
+        'x-sessio': koodiRef.current,
       },
       body: JSON.stringify({ viestit }),
     })
@@ -43,7 +43,7 @@ function App() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-paasykoodi': koodiRef.current,
+        'x-sessio': koodiRef.current,
       },
       body: JSON.stringify({ teksti: sanat }),
     })
@@ -139,9 +139,9 @@ function App() {
     })
   }
 
-  // Ennen koodin syöttöä näytetään pääsyportti
+  // Ennen sisäänpääsyä näytetään pääsyportti
   if (!paasykoodi) {
-    return <Paasyportti onAvattu={asetaKoodi} />
+    return <Paasyportti onAvattu={asetaSessio} />
   }
 
   return (

@@ -91,14 +91,10 @@ export function aanitaJaTunnista(paasykoodi) {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'x-paasykoodi': paasykoodi,
+              'x-sessio': paasykoodi,
             },
             body: JSON.stringify({ audio: dataUrl }),
           })
-          if (!r.ok) {
-            reject(new Error('Puheentunnistus epäonnistui'))
-            return
-          }
           const tulos = await r.json()
           resolve(tulos.teksti || '')
         } catch (e) {

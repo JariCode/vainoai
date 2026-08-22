@@ -4,6 +4,7 @@ import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
 import 'dotenv/config'
 import OpenAI, { toFile } from 'openai'
+import crypto from 'crypto'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -83,16 +84,42 @@ const openaiLimiter = rateLimit({
 // Yleinen raja koko API:lle
 app.use('/api', apiLimiter)
 
-// --- Pääsykoodi: vain oikean koodin tietävät pääsevät sisään ---
-function vaadiPaasykoodi(req, res, next) {
-  const annettu = req.get('x-paasykoodi')
+// --- Pääsy: pääsykoodilla saa sessiotunnuksen, jota käytetään koodin sijaan ---
+// Voimassa olevat sessiotunnukset muistissa. Tunnus = satunnainen merkkijono,
+// arvo = vanhenemisaika (ms). Ei tietokantaa, joten tunnukset katoavat kun
+// palvelin käynnistetään uudelleen (käyttäjä syöttää koodin silloin uudelleen).
+const sessiot = new Map()
+const SESSION_KESTO_MS = 12 * 60 * 60 * 1000   // 12 tuntia
+
+// Luo uusi sessiotunnus ja tallentaa sen voimassaoloajan kanssa
+function luoSessio() {
+  const tunnus = crypto.randomBytes(32).toString('hex')
+  sessiot.set(tunnus, Date.now() + SESSION_KESTO_MS)
+  return tunnus
+}
+
+// Tarkistaa onko sessiotunnus voimassa (ja siivoaa vanhentuneet)
+function onVoimassa(tunnus) {
+  if (typeof tunnus !== 'string' || !sessiot.has(tunnus)) return false
+  const vanhenee = sessiot.get(tunnus)
+  if (Date.now() > vanhenee) {
+    sessiot.delete(tunnus)
+    return false
+  }
+  return true
+}
+
+// Vartija: suojatut reitit vaativat voimassa olevan sessiotunnuksen.
+// Itse pääsykoodi ei koskaan kulje näissä pyynnöissä, vain sessiotunnus.
+function vaadiSessio(req, res, next) {
   if (!process.env.PAASYKOODI) {
     return next()   // jos koodia ei ole asetettu, päästetään läpi (kehitys)
   }
-  if (typeof annettu === 'string' && annettu === process.env.PAASYKOODI) {
+  const tunnus = req.get('x-sessio')
+  if (onVoimassa(tunnus)) {
     return next()
   }
-  return res.status(401).json({ virhe: 'Väärä pääsykoodi' })
+  return res.status(401).json({ virhe: 'Sessio ei ole voimassa' })
 }
 
 // --- Syötteen siivous: poistaa ohjausmerkit ja rajaa pituuden ---
@@ -117,13 +144,24 @@ juttelemaan läheisen tai ammattilaisen kanssa — et esitä korvaavasi ihmiskon
 Jos sinulta suoraan kysytään, oletko ihminen, kerrot rehellisesti olevasi tietokoneen puhekumppani.
 Jos käyttäjän viesti on epäselvä tai et ymmärrä sitä, älä esittäydy uudestaan, vaan pyydä ystävällisesti toistamaan.`
 
-// Pääsykoodin tarkistus (oma brute force -raja)
-app.post('/api/tarkista', koodiLimiter, vaadiPaasykoodi, (req, res) => {
-  res.json({ ok: true })
+// Pääsykoodin tarkistus (oma brute force -raja). Palauttaa sessiotunnuksen.
+app.post('/api/tarkista', koodiLimiter, (req, res) => {
+  const annettu = req.get('x-paasykoodi')
+
+  // Kehityksessä ilman koodia: annetaan silti sessiotunnus
+  if (!process.env.PAASYKOODI) {
+    return res.json({ ok: true, sessio: luoSessio() })
+  }
+
+  if (typeof annettu === 'string' && annettu === process.env.PAASYKOODI) {
+    return res.json({ ok: true, sessio: luoSessio() })
+  }
+
+  return res.status(401).json({ virhe: 'Väärä pääsykoodi' })
 })
 
 // Puheentunnistus: ottaa äänen base64 data-URL:na, palauttaa tekstin.
-app.post('/api/tunnista', openaiLimiter, vaadiPaasykoodi, async (req, res) => {
+app.post('/api/tunnista', openaiLimiter, vaadiSessio, async (req, res) => {
   try {
     const { audio } = req.body
 
@@ -180,7 +218,7 @@ app.post('/api/tunnista', openaiLimiter, vaadiPaasykoodi, async (req, res) => {
 })
 
 // Keskustelu: ottaa historian, palauttaa Väinön vastauksen tekstinä
-app.post('/api/keskustele', openaiLimiter, vaadiPaasykoodi, async (req, res) => {
+app.post('/api/keskustele', openaiLimiter, vaadiSessio, async (req, res) => {
   try {
     const { viestit } = req.body
     if (!Array.isArray(viestit)) {
@@ -220,7 +258,7 @@ app.post('/api/keskustele', openaiLimiter, vaadiPaasykoodi, async (req, res) => 
 })
 
 // Puhe: ottaa tekstin, palauttaa äänen (mp3) raakatavuina
-app.post('/api/puhu', openaiLimiter, vaadiPaasykoodi, async (req, res) => {
+app.post('/api/puhu', openaiLimiter, vaadiSessio, async (req, res) => {
   try {
     const teksti = siivoaTeksti(req.body?.teksti, 1000)
     if (!teksti) {

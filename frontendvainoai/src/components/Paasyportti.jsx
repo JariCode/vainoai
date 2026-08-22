@@ -3,8 +3,7 @@ import { API_URL } from '../api'
 import './Paasyportti.css'
 
 // Pääsyportti: kysyy pääsykoodin ennen kuin Väinö tulee näkyviin.
-// Kun koodi on oikein, se välitetään ylös (onAvattu) ja tallennetaan
-// pyyntöjen otsakkeeseen.
+// Oikealla koodilla backend palauttaa sessiotunnuksen, joka välitetään ylös.
 function Paasyportti({ onAvattu }) {
   const [koodi, setKoodi] = useState('')
   const [virhe, setVirhe] = useState('')
@@ -23,7 +22,8 @@ function Paasyportti({ onAvattu }) {
         },
       })
       if (r.ok) {
-        onAvattu(koodi.trim())
+        const data = await r.json().catch(() => ({}))
+        onAvattu(data.sessio)
       } else {
         // Lue backendin oikea virheviesti (esim. väärä koodi tai rate limit)
         const data = await r.json().catch(() => ({}))
