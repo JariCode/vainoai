@@ -20,7 +20,7 @@ function App() {
     try {
       const vastaus = await haeVastaus(historia.current)
       historia.current.push({ role: 'assistant', content: vastaus })
-      setTeksti(vastaus)
+      setTeksti('')
       await puhu(vastaus)
     } catch (e) {
       console.error(e)
@@ -54,10 +54,11 @@ function App() {
       body: JSON.stringify({ teksti: sanat }),
     })
     const audioData = await r.arrayBuffer()
-    await soitaAani(audioData)
+    await soitaAani(audioData, sanat)
   }
 
-  const soitaAani = (audioData) => {
+  // Soittaa äänen, liikuttaa suuta ja kirjoittaa tekstin äänen tahtiin
+  const soitaAani = (audioData, sanat) => {
     return new Promise((resolve) => {
       const audioCtx = new AudioContext()
       audioCtx.decodeAudioData(audioData.slice(0), (buffer) => {
@@ -74,6 +75,17 @@ function App() {
         setTila('puhuu')
         source.start(0)
 
+        // Teksti kirjoittuu ruudulle äänen keston mukaan
+        const kesto = buffer.duration * 1000
+        const merkkiVali = kesto / Math.max(sanat.length, 1)
+        let i = 0
+        const kirjoita = setInterval(() => {
+          i++
+          setTeksti(sanat.slice(0, i))
+          if (i >= sanat.length) clearInterval(kirjoita)
+        }, merkkiVali)
+
+        // Suun liike äänen voimakkuuden mukaan
         const seuraa = () => {
           analyser.getByteFrequencyData(data)
           const voimakkuus = data.reduce((a, b) => a + b, 0) / data.length
@@ -84,6 +96,8 @@ function App() {
 
         source.onended = () => {
           loppui = true
+          clearInterval(kirjoita)
+          setTeksti(sanat)
           setSuunAvaus(0)
           setTila('odottaa')
           audioCtx.close()
