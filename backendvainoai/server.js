@@ -12,6 +12,20 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 app.use(cors())
 app.use(express.json({ limit: '15mb' }))
 
+// Pääsykoodi: vain oikean koodin tietävät pääsevät juttelemaan Väinön kanssa.
+// Koodi luetaan .env:stä (PAASYKOODI). Frontend lähettää sen otsakkeessa.
+function vaadiPaasykoodi(req, res, next) {
+  const annettu = req.get('x-paasykoodi')
+  if (!process.env.PAASYKOODI) {
+    // Jos koodia ei ole asetettu, päästetään läpi (kehityksen helpottamiseksi)
+    return next()
+  }
+  if (annettu === process.env.PAASYKOODI) {
+    return next()
+  }
+  return res.status(401).json({ virhe: 'Väärä pääsykoodi' })
+}
+
 // Väinön luonne. Tämä yksi teksti määrää millainen hahmo on.
 const VAINON_LUONNE = `Olet Väinö, iäkäs suomalainen mies. Olit ennen puuseppä.
 Olet rauhallinen, lämmin ja kärsivällinen juttukaveri. Sinulla ei ole kiirettä.
@@ -24,20 +38,21 @@ juttelemaan läheisen tai ammattilaisen kanssa — et esitä korvaavasi ihmiskon
 Jos sinulta suoraan kysytään, oletko ihminen, kerrot rehellisesti olevasi tietokoneen puhekumppani.
 Jos käyttäjän viesti on epäselvä tai et ymmärrä sitä, älä esittäydy uudestaan, vaan pyydä ystävällisesti toistamaan.`
 
+// Pääsykoodin tarkistus: frontend kutsuu tätä kun käyttäjä syöttää koodin
+app.post('/api/tarkista', vaadiPaasykoodi, (req, res) => {
+  res.json({ ok: true })
+})
+
 // Puheentunnistus: ottaa äänen base64 data-URL:na, palauttaa tekstin.
-// Sama tapa kuin Watcher AI:ssa — toimii kaikissa selaimissa, myös Firefoxissa.
-app.post('/api/tunnista', async (req, res) => {
+// Toimii kaikissa selaimissa, myös Firefoxissa.
+app.post('/api/tunnista', vaadiPaasykoodi, async (req, res) => {
   try {
     const { audio } = req.body
 
-    // Tyyppivahti: äänen on oltava merkkijono (base64 data-URL)
     if (typeof audio !== 'string' || !audio) {
       return res.status(400).json({ virhe: 'Äänidataa ei annettu.' })
     }
 
-    // Hyväksytään data-URL jonka MIME-tyyppi on audio/* TAI application/octet-stream.
-    // Firefox ei aina merkitse MediaRecorderin tuotosta audio-tyypillä vaan käyttää
-    // yleistä octet-streamia, vaikka sisältö on oikeasti ääntä.
     const match = audio.match(/^data:(audio\/[a-zA-Z0-9.+-]+|application\/octet-stream)(;[^;,]+)*;base64,(.+)$/)
     if (!match) {
       return res.status(400).json({ virhe: 'Virheellinen äänimuoto.' })
@@ -47,13 +62,10 @@ app.post('/api/tunnista', async (req, res) => {
     const base64Data = match[3]
     const buffer = Buffer.from(base64Data, 'base64')
 
-    // Kokoraja: enintään 10 Mt
     if (buffer.length > 10 * 1024 * 1024) {
       return res.status(400).json({ virhe: 'Äänileike on liian pitkä.' })
     }
 
-    // Päätetään tiedostopääte. Jos MIME on epämääräinen octet-stream,
-    // katsotaan tiedoston taikatavut: Ogg alkaa "OggS", webm tavuilla 0x1A45DFA3.
     let ext
     if (mimeType.includes('webm')) {
       ext = 'webm'
@@ -90,7 +102,7 @@ app.post('/api/tunnista', async (req, res) => {
 })
 
 // Keskustelu: ottaa historian, palauttaa Väinön vastauksen tekstinä
-app.post('/api/keskustele', async (req, res) => {
+app.post('/api/keskustele', vaadiPaasykoodi, async (req, res) => {
   try {
     const { viestit } = req.body
     if (!Array.isArray(viestit)) {
@@ -115,7 +127,7 @@ app.post('/api/keskustele', async (req, res) => {
 })
 
 // Puhe: ottaa tekstin, palauttaa äänen (mp3) raakatavuina
-app.post('/api/puhu', async (req, res) => {
+app.post('/api/puhu', vaadiPaasykoodi, async (req, res) => {
   try {
     const { teksti } = req.body
     if (!teksti) {

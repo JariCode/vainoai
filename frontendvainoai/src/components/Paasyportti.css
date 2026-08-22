@@ -1,0 +1,114 @@
+.portti-sivu {
+  position: relative;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.portti-sivu::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 520px;
+  height: 520px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, var(--kynttila-hehku) 0%, transparent 68%);
+  filter: blur(24px);
+  animation: lepatus 5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes lepatus {
+  0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+}
+
+.portti-laatikko {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+  padding: 3rem 2.5rem;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+}
+
+.portti-otsikko {
+  font-family: 'Georgia', serif;
+  font-size: 2.6rem;
+  letter-spacing: 0.08em;
+  color: var(--kynttila);
+  margin: 0;
+  text-shadow: 0 2px 18px var(--kynttila-hehku);
+}
+
+.portti-teksti {
+  font-family: 'Georgia', serif;
+  font-style: italic;
+  font-size: 1.15rem;
+  line-height: 1.5;
+  color: var(--teksti);
+  opacity: 0.9;
+  margin: 0;
+}
+
+.portti-kentta {
+  width: 100%;
+  padding: 0.9rem 1.1rem;
+  font-size: 1.2rem;
+  font-family: 'Georgia', serif;
+  text-align: center;
+  letter-spacing: 0.15em;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1.5px solid var(--teksti-himmea);
+  border-radius: 2px;
+  color: var(--teksti);
+  outline: none;
+  transition: border-color 0.25s;
+}
+
+.portti-kentta:focus {
+  border-color: var(--kynttila);
+}
+
+.portti-kentta::placeholder {
+  color: var(--teksti-himmea);
+  letter-spacing: 0.05em;
+}
+
+.portti-nappi {
+  font-family: 'Georgia', serif;
+  font-size: 1.2rem;
+  letter-spacing: 0.06em;
+  padding: 0.9rem 2.4rem;
+  border: 1.5px solid var(--kynttila);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--kynttila);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.portti-nappi:hover:not(:disabled) {
+  background: var(--kynttila);
+  color: var(--yo-ala);
+  box-shadow: 0 0 30px var(--kynttila-hehku);
+}
+
+.portti-nappi:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.portti-virhe {
+  color: #e0937a;
+  font-family: 'Georgia', serif;
+  font-size: 1rem;
+  margin: 0;
+}

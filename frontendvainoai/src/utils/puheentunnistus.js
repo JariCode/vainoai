@@ -6,14 +6,13 @@ const HILJAISUUS_MS = 2000      // kuinka pitkä tauko lopettaa äänityksen
 const HILJAISUUS_RAJA = 8       // äänenvoimakkuuden kynnys (0–255), alle tämän = hiljaisuus
 const MAKSIMI_MS = 20000        // varmuusraja: äänitys ei jatku loputtomiin
 
-export function aanitaJaTunnista() {
+export function aanitaJaTunnista(paasykoodi) {
   return new Promise((resolve, reject) => {
     if (!navigator.mediaDevices || !window.MediaRecorder) {
       reject(new Error('Selaimesi ei tue äänen nauhoitusta.'))
       return
     }
 
-    // Paremmat laatuasetukset parantavat tunnistustarkkuutta
     navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: true,
@@ -21,8 +20,6 @@ export function aanitaJaTunnista() {
         autoGainControl: true,
       },
     }).then((stream) => {
-      // Valitaan nauhoitusmuoto: webm/opus jos selain tukee (Chrome ja Firefox
-      // tukevat molemmat). Yhtenäinen muoto parantaa tunnistusta.
       let recorderOptions = {}
       if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
         recorderOptions = { mimeType: 'audio/webm;codecs=opus' }
@@ -35,7 +32,6 @@ export function aanitaJaTunnista() {
       let hiljaisuusAjastin = null
       let maksimiAjastin = null
 
-      // Äänenvoimakkuuden seuranta hiljaisuuden tunnistukseen
       const audioCtx = new AudioContext()
       const lahde = audioCtx.createMediaStreamSource(stream)
       const analyser = audioCtx.createAnalyser()
@@ -82,7 +78,6 @@ export function aanitaJaTunnista() {
         }
 
         try {
-          // Muunnetaan ääni base64 data-URL:ksi (toimii myös Firefoxissa)
           const dataUrl = await new Promise((res2, rej2) => {
             const reader = new FileReader()
             reader.onload = () => res2(reader.result)
@@ -92,7 +87,10 @@ export function aanitaJaTunnista() {
 
           const r = await fetch('/api/tunnista', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'x-paasykoodi': paasykoodi,
+            },
             body: JSON.stringify({ audio: dataUrl }),
           })
           const tulos = await r.json()

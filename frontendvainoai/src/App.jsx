@@ -1,9 +1,11 @@
 import { useState, useRef, useCallback } from 'react'
 import Vaino from './components/Vaino'
+import Paasyportti from './components/Paasyportti'
 import { aanitaJaTunnista } from './utils/puheentunnistus'
 import './App.css'
 
 function App() {
+  const [paasykoodi, setPaasykoodi] = useState(() => sessionStorage.getItem('vaino-koodi'))
   const [tila, setTila] = useState('odottaa')
   const [teksti, setTeksti] = useState('Paina nappia ja juttele kanssani.')
   const [suunAvaus, setSuunAvaus] = useState(0)
@@ -35,18 +37,21 @@ function App() {
   const aloitaPuhuminen = useCallback(async () => {
     setTila('kuuntelee')
     try {
-      const puhe = await aanitaJaTunnista()
+      const puhe = await aanitaJaTunnista(paasykoodi)
       await kasitteleKayttajanPuhe(puhe)
     } catch (e) {
       console.error(e)
       setTila('odottaa')
     }
-  }, [kasitteleKayttajanPuhe])
+  }, [kasitteleKayttajanPuhe, paasykoodi])
 
   const haeVastaus = async (viestit) => {
     const r = await fetch('/api/keskustele', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-paasykoodi': paasykoodi,
+      },
       body: JSON.stringify({ viestit }),
     })
     const data = await r.json()
@@ -56,7 +61,10 @@ function App() {
   const puhu = async (sanat) => {
     const r = await fetch('/api/puhu', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-paasykoodi': paasykoodi,
+      },
       body: JSON.stringify({ teksti: sanat }),
     })
     const audioData = await r.arrayBuffer()
@@ -111,6 +119,18 @@ function App() {
         }
       })
     })
+  }
+
+  // Ennen koodin syöttöä näytetään pääsyportti
+  if (!paasykoodi) {
+    return (
+      <Paasyportti
+        onAvattu={(koodi) => {
+          sessionStorage.setItem('vaino-koodi', koodi)
+          setPaasykoodi(koodi)
+        }}
+      />
+    )
   }
 
   return (
