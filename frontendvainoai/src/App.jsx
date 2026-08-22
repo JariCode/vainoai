@@ -10,7 +10,9 @@ function App() {
   const historia = useRef([])
 
   const kasitteleKayttajanPuhe = useCallback(async (puhe) => {
-    if (!puhe?.trim()) {
+    // Jos tunnistus jäi tyhjäksi tai liian lyhyeksi, pyydä toistamaan
+    if (!puhe || puhe.trim().length < 3) {
+      setTeksti('En kuullut kunnolla. Sanoisitko vielä uudestaan?')
       setTila('odottaa')
       return
     }

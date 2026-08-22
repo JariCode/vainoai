@@ -102,7 +102,7 @@ export function aanitaJaTunnista() {
         }
       }
 
-      recorder.start()
+      recorder.start(100)
       seuraaAanta()
       maksimiAjastin = setTimeout(lopeta, MAKSIMI_MS)
     }).catch((e) => {
