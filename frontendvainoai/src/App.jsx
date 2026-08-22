@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 import Vaino from './components/Vaino'
-import { kaynnistaKuuntelu } from './utils/puheentunnistus'
+import { aanitaJaTunnista } from './utils/puheentunnistus'
 import './App.css'
 
 function App() {
@@ -29,12 +29,16 @@ function App() {
     }
   }, [])
 
-  const aloitaPuhuminen = useCallback(() => {
+  // Paina kerran: äänitys alkaa ja päättyy automaattisesti kun lopetat puhumisen
+  const aloitaPuhuminen = useCallback(async () => {
     setTila('kuuntelee')
-    kaynnistaKuuntelu({
-      onValmis: (puhe) => kasitteleKayttajanPuhe(puhe),
-      onVirhe: () => setTila('odottaa'),
-    })
+    try {
+      const puhe = await aanitaJaTunnista()
+      await kasitteleKayttajanPuhe(puhe)
+    } catch (e) {
+      console.error(e)
+      setTila('odottaa')
+    }
   }, [kasitteleKayttajanPuhe])
 
   const haeVastaus = async (viestit) => {
