@@ -1,3 +1,5 @@
+import { API_URL } from '../api'
+
 // Äänittää mikrofonin, lopettaa automaattisesti kun puhuja hiljenee,
 // ja lähettää äänen backendille tunnistettavaksi base64-muodossa.
 // Toimii kaikissa moderneissa selaimissa, myös Firefoxissa.
@@ -85,7 +87,7 @@ export function aanitaJaTunnista(paasykoodi) {
             reader.readAsDataURL(aani)
           })
 
-          const r = await fetch('/api/tunnista', {
+          const r = await fetch(`${API_URL}/tunnista`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -93,6 +95,10 @@ export function aanitaJaTunnista(paasykoodi) {
             },
             body: JSON.stringify({ audio: dataUrl }),
           })
+          if (!r.ok) {
+            reject(new Error('Puheentunnistus epäonnistui'))
+            return
+          }
           const tulos = await r.json()
           resolve(tulos.teksti || '')
         } catch (e) {

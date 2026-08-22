@@ -81,3 +81,5 @@ desktop.ini
 # ---- Lock-tiedostot ----
 package-lock.json
 **/package-lock.json
+
+.htaccess
