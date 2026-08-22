@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react'
 import Vaino from './components/Vaino'
 import Paasyportti from './components/Paasyportti'
 import { aanitaJaTunnista } from './utils/puheentunnistus'
+import { API_URL } from './api'
 import './App.css'
 
 function App() {
@@ -10,6 +11,49 @@ function App() {
   const [teksti, setTeksti] = useState('Paina nappia ja juttele kanssani.')
   const [suunAvaus, setSuunAvaus] = useState(0)
   const historia = useRef([])
+
+  // Pääsykoodi myös refissä, jotta pyynnöt lukevat aina tuoreimman arvon
+  // (ei jää jumiin vanhaan closure-arvoon).
+  const koodiRef = useRef(paasykoodi)
+
+  const asetaKoodi = (koodi) => {
+    sessionStorage.setItem('vaino-koodi', koodi)
+    koodiRef.current = koodi
+    setPaasykoodi(koodi)
+  }
+
+  const haeVastaus = async (viestit) => {
+    const r = await fetch(`${API_URL}/keskustele`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-paasykoodi': koodiRef.current,
+      },
+      body: JSON.stringify({ viestit }),
+    })
+    if (!r.ok) {
+      throw new Error('Vastauksen haku epäonnistui')
+    }
+    const data = await r.json()
+    return data.vastaus
+  }
+
+  const puhu = async (sanat) => {
+    const r = await fetch(`${API_URL}/puhu`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-paasykoodi': koodiRef.current,
+      },
+      body: JSON.stringify({ teksti: sanat }),
+    })
+    // Jos backend palautti virheen (esim. 401/429), älä yritä dekoodata äänenä
+    if (!r.ok) {
+      throw new Error('Äänen haku epäonnistui')
+    }
+    const audioData = await r.arrayBuffer()
+    await soitaAani(audioData, sanat)
+  }
 
   const kasitteleKayttajanPuhe = useCallback(async (puhe) => {
     // Jos tunnistus jäi tyhjäksi tai liian lyhyeksi, pyydä toistamaan
@@ -37,39 +81,13 @@ function App() {
   const aloitaPuhuminen = useCallback(async () => {
     setTila('kuuntelee')
     try {
-      const puhe = await aanitaJaTunnista(paasykoodi)
+      const puhe = await aanitaJaTunnista(koodiRef.current)
       await kasitteleKayttajanPuhe(puhe)
     } catch (e) {
       console.error(e)
       setTila('odottaa')
     }
-  }, [kasitteleKayttajanPuhe, paasykoodi])
-
-  const haeVastaus = async (viestit) => {
-    const r = await fetch('/api/keskustele', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-paasykoodi': paasykoodi,
-      },
-      body: JSON.stringify({ viestit }),
-    })
-    const data = await r.json()
-    return data.vastaus
-  }
-
-  const puhu = async (sanat) => {
-    const r = await fetch('/api/puhu', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-paasykoodi': paasykoodi,
-      },
-      body: JSON.stringify({ teksti: sanat }),
-    })
-    const audioData = await r.arrayBuffer()
-    await soitaAani(audioData, sanat)
-  }
+  }, [kasitteleKayttajanPuhe])
 
   // Soittaa äänen, liikuttaa suuta ja kirjoittaa tekstin äänen tahtiin
   const soitaAani = (audioData, sanat) => {
@@ -123,14 +141,7 @@ function App() {
 
   // Ennen koodin syöttöä näytetään pääsyportti
   if (!paasykoodi) {
-    return (
-      <Paasyportti
-        onAvattu={(koodi) => {
-          sessionStorage.setItem('vaino-koodi', koodi)
-          setPaasykoodi(koodi)
-        }}
-      />
-    )
+    return <Paasyportti onAvattu={asetaKoodi} />
   }
 
   return (

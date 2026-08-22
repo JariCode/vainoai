@@ -1,5 +1,7 @@
 import express from 'express'
 import cors from 'cors'
+import helmet from 'helmet'
+import rateLimit from 'express-rate-limit'
 import 'dotenv/config'
 import OpenAI, { toFile } from 'openai'
 
@@ -8,22 +10,99 @@ const PORT = process.env.PORT || 3001
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
+// Renderin (ja muiden proxyjen) takana: luota ensimmäiseen proxyyn, jotta
+// rate limit tunnistaa oikean IP:n eikä proxyn osoitetta.
+app.set('trust proxy', 1)
+
+// --- Turvallisuusotsakkeet (Helmet) ---
+// Tämä on JSON-API. HSTS pakottaa HTTPS:n, referrerPolicy ei vuoda osoitetta.
+app.use(helmet({
+  hsts: {
+    maxAge: 31536000,          // 1 vuosi sekunteina
+    includeSubDomains: true,
+  },
+  referrerPolicy: {
+    policy: 'strict-origin-when-cross-origin',
+  },
+}))
+
+// --- CORS: sallitut originit ympäristömuuttujasta ---
+// Tuotannossa origin on pakko asettaa (ei localhost-oletusta), kehityksessä
+// localhost on oletus jos muuttujaa ei ole.
+const defaultOrigins = process.env.NODE_ENV === 'production'
+  ? ''
+  : 'http://localhost:5173'
+
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || defaultOrigins)
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean)
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Sallitaan pyynnöt ilman originia (palvelinten väliset) ja listalla olevat
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true)
+    } else {
+      callback(new Error('CORS: origin ei ole sallittu'))
+    }
+  },
+}))
+
 // Suurempi JSON-raja, koska ääni tulee base64-muodossa rungossa
-app.use(cors())
 app.use(express.json({ limit: '15mb' }))
 
-// Pääsykoodi: vain oikean koodin tietävät pääsevät juttelemaan Väinön kanssa.
-// Koodi luetaan .env:stä (PAASYKOODI). Frontend lähettää sen otsakkeessa.
+// --- Pyyntörajoittimet (rate limit) ---
+// Yleinen katto koko API:lle: estää spämmin mutta ei haittaa normaalia käyttöä.
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,               // 1 minuutti
+  max: 60,                           // enintään 60 pyyntöä / IP / minuutti
+  message: { virhe: 'Liikaa pyyntöjä. Hidasta hetkeksi.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+})
+
+// Brute force -suoja pääsykoodille: harva syöttää koodia kymmeniä kertoja.
+const koodiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,          // 15 minuuttia
+  max: 8,                            // enintään 8 yritystä / IP / ikkuna
+  message: { virhe: 'Liian monta yritystä. Yritä myöhemmin uudelleen.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+})
+
+// OpenAI-kutsujen suoja (kustannukset): jokainen kutsu maksaa, joten tiukempi.
+const openaiLimiter = rateLimit({
+  windowMs: 60 * 1000,               // 1 minuutti
+  max: 20,                           // enintään 20 kutsua / IP / minuutti
+  message: { virhe: 'Lähetät liian nopeasti. Hetki.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+})
+
+// Yleinen raja koko API:lle
+app.use('/api', apiLimiter)
+
+// --- Pääsykoodi: vain oikean koodin tietävät pääsevät sisään ---
 function vaadiPaasykoodi(req, res, next) {
   const annettu = req.get('x-paasykoodi')
   if (!process.env.PAASYKOODI) {
-    // Jos koodia ei ole asetettu, päästetään läpi (kehityksen helpottamiseksi)
-    return next()
+    return next()   // jos koodia ei ole asetettu, päästetään läpi (kehitys)
   }
-  if (annettu === process.env.PAASYKOODI) {
+  if (typeof annettu === 'string' && annettu === process.env.PAASYKOODI) {
     return next()
   }
   return res.status(401).json({ virhe: 'Väärä pääsykoodi' })
+}
+
+// --- Syötteen siivous: poistaa ohjausmerkit ja rajaa pituuden ---
+// Estää roskasyötteen ja suojaa mallia oudoilta ohjausmerkeiltä.
+function siivoaTeksti(arvo, maksimi = 4000) {
+  if (typeof arvo !== 'string') return ''
+  return arvo
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '') // ohjausmerkit pois
+    .slice(0, maksimi)
+    .trim()
 }
 
 // Väinön luonne. Tämä yksi teksti määrää millainen hahmo on.
@@ -38,14 +117,13 @@ juttelemaan läheisen tai ammattilaisen kanssa — et esitä korvaavasi ihmiskon
 Jos sinulta suoraan kysytään, oletko ihminen, kerrot rehellisesti olevasi tietokoneen puhekumppani.
 Jos käyttäjän viesti on epäselvä tai et ymmärrä sitä, älä esittäydy uudestaan, vaan pyydä ystävällisesti toistamaan.`
 
-// Pääsykoodin tarkistus: frontend kutsuu tätä kun käyttäjä syöttää koodin
-app.post('/api/tarkista', vaadiPaasykoodi, (req, res) => {
+// Pääsykoodin tarkistus (oma brute force -raja)
+app.post('/api/tarkista', koodiLimiter, vaadiPaasykoodi, (req, res) => {
   res.json({ ok: true })
 })
 
 // Puheentunnistus: ottaa äänen base64 data-URL:na, palauttaa tekstin.
-// Toimii kaikissa selaimissa, myös Firefoxissa.
-app.post('/api/tunnista', vaadiPaasykoodi, async (req, res) => {
+app.post('/api/tunnista', openaiLimiter, vaadiPaasykoodi, async (req, res) => {
   try {
     const { audio } = req.body
 
@@ -102,18 +180,33 @@ app.post('/api/tunnista', vaadiPaasykoodi, async (req, res) => {
 })
 
 // Keskustelu: ottaa historian, palauttaa Väinön vastauksen tekstinä
-app.post('/api/keskustele', vaadiPaasykoodi, async (req, res) => {
+app.post('/api/keskustele', openaiLimiter, vaadiPaasykoodi, async (req, res) => {
   try {
     const { viestit } = req.body
     if (!Array.isArray(viestit)) {
       return res.status(400).json({ virhe: 'viestit puuttuu' })
     }
 
+    // Rajaa historian pituus ja siivoa jokainen viesti.
+    // Estää liian ison pyynnön ja roskasyötteen mallille.
+    const puhtaatViestit = viestit
+      .slice(-20)                                    // enintään 20 viimeisintä
+      .filter((v) => v && (v.role === 'user' || v.role === 'assistant'))
+      .map((v) => ({
+        role: v.role,
+        content: siivoaTeksti(v.content, 2000),
+      }))
+      .filter((v) => v.content.length > 0)
+
+    if (puhtaatViestit.length === 0) {
+      return res.status(400).json({ virhe: 'Ei kelvollisia viestejä' })
+    }
+
     const vastaus = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: VAINON_LUONNE },
-        ...viestit,
+        ...puhtaatViestit,
       ],
       temperature: 0.8,
       max_tokens: 200,
@@ -127,9 +220,9 @@ app.post('/api/keskustele', vaadiPaasykoodi, async (req, res) => {
 })
 
 // Puhe: ottaa tekstin, palauttaa äänen (mp3) raakatavuina
-app.post('/api/puhu', vaadiPaasykoodi, async (req, res) => {
+app.post('/api/puhu', openaiLimiter, vaadiPaasykoodi, async (req, res) => {
   try {
-    const { teksti } = req.body
+    const teksti = siivoaTeksti(req.body?.teksti, 1000)
     if (!teksti) {
       return res.status(400).json({ virhe: 'teksti puuttuu' })
     }

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { API_URL } from '../api'
 import './Paasyportti.css'
 
 // Pääsyportti: kysyy pääsykoodin ennen kuin Väinö tulee näkyviin.
@@ -14,7 +15,7 @@ function Paasyportti({ onAvattu }) {
     setTarkistaa(true)
     setVirhe('')
     try {
-      const r = await fetch('/api/tarkista', {
+      const r = await fetch(`${API_URL}/tarkista`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -24,7 +25,9 @@ function Paasyportti({ onAvattu }) {
       if (r.ok) {
         onAvattu(koodi.trim())
       } else {
-        setVirhe('Koodi ei täsmää. Yritä uudelleen.')
+        // Lue backendin oikea virheviesti (esim. väärä koodi tai rate limit)
+        const data = await r.json().catch(() => ({}))
+        setVirhe(data.virhe || 'Koodi ei täsmää. Yritä uudelleen.')
       }
     } catch {
       setVirhe('Yhteys ei toiminut. Yritä hetken kuluttua.')
