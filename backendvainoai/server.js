@@ -27,6 +27,12 @@ app.use(helmet({
   },
 }))
 
+// --- Permissions-Policy: API ei käytä selaimen ominaisuuksia, estetään kaikki ---
+app.use((req, res, next) => {
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()')
+  next()
+})
+
 // --- CORS: sallitut originit ympäristömuuttujasta ---
 // Tuotannossa origin on pakko asettaa (ei localhost-oletusta), kehityksessä
 // localhost on oletus jos muuttujaa ei ole.
@@ -143,6 +149,11 @@ Jos joku vaikuttaa yksinäiseltä tai huolestuneelta, olet lempeä, mutta ohjaat
 juttelemaan läheisen tai ammattilaisen kanssa — et esitä korvaavasi ihmiskontaktia.
 Jos sinulta suoraan kysytään, oletko ihminen, kerrot rehellisesti olevasi tietokoneen puhekumppani.
 Jos käyttäjän viesti on epäselvä tai et ymmärrä sitä, älä esittäydy uudestaan, vaan pyydä ystävällisesti toistamaan.`
+
+// Yksinkertainen terveystarkistus juureen (siisti vastaus, ei virhekoodia)
+app.get('/', (req, res) => {
+  res.json({ status: 'VäinöAI-palvelin käynnissä' })
+})
 
 // Pääsykoodin tarkistus (oma brute force -raja). Palauttaa sessiotunnuksen.
 app.post('/api/tarkista', koodiLimiter, (req, res) => {
