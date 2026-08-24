@@ -95,7 +95,7 @@ app.use('/api', apiLimiter)
 // arvo = vanhenemisaika (ms). Ei tietokantaa, joten tunnukset katoavat kun
 // palvelin käynnistetään uudelleen (käyttäjä syöttää koodin silloin uudelleen).
 const sessiot = new Map()
-const SESSION_KESTO_MS = 12 * 60 * 60 * 1000   // 12 tuntia
+const SESSION_KESTO_MS = 2 * 60 * 60 * 1000   // 2 tuntia
 
 // Luo uusi sessiotunnus ja tallentaa sen voimassaoloajan kanssa
 function luoSessio() {
