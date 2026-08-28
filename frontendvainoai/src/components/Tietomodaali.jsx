@@ -20,7 +20,7 @@ function Tietomodaali({ onSulje }) {
         <ul className="modaali-lista">
           <li>VäinöAI ei kerää eikä tallenna henkilötietoja. Keskusteluja ei tallenneta minnekään, vaan ne katoavat kun sivu suljetaan.</li>
           <li>Kun puhut, äänesi lähetetään OpenAI:lle vastauksen muodostamista varten. Muuta tietoa ei välitetä.</li>
-          <li>Selaimeesi tallentuu vain väliaikainen sessiotunnus, joka poistuu itsestään kahdessa tunnissa. Se ei sisällä henkilötietoja.</li>
+          <li>Selaimeesi tallentuu vain väliaikainen sessiotunnus, joka poistuu itsestään. Se ei sisällä henkilötietoja.</li>
           <li>Palvelu ei käytä evästeitä eikä seuraa käyttöä.</li>
         </ul>
 
