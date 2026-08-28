@@ -112,3 +112,113 @@
   font-size: 1rem;
   margin: 0;
 }
+
+/* Linkki tietomodaaliin pääsyportin alla */
+.portti-linkki {
+  margin-top: 0.5rem;
+  background: none;
+  border: none;
+  color: var(--teksti-himmea);
+  font-family: inherit;
+  font-size: 0.9rem;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.portti-linkki:hover {
+  color: var(--kynttila);
+}
+
+/* Tietomodaali */
+.modaali-tausta {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px);
+}
+
+.modaali-laatikko {
+  position: relative;
+  max-width: 480px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 2rem 2.2rem;
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--yo-yla) 0%, var(--yo-ala) 100%);
+  border: 1px solid rgba(232, 169, 75, 0.25);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  color: var(--teksti);
+  text-align: left;
+}
+
+.modaali-otsikko {
+  font-family: Georgia, serif;
+  color: var(--kynttila);
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.modaali-alaotsikko {
+  font-family: Georgia, serif;
+  color: var(--teksti);
+  font-size: 1.1rem;
+  margin: 1.2rem 0 0.6rem;
+}
+
+.modaali-teksti {
+  color: var(--teksti-himmea);
+  line-height: 1.6;
+  margin-bottom: 0.8rem;
+}
+
+.modaali-lista {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.modaali-lista li {
+  color: var(--teksti-himmea);
+  line-height: 1.6;
+  padding-left: 1.2rem;
+  position: relative;
+  margin-bottom: 0.7rem;
+}
+
+.modaali-lista li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--kynttila);
+}
+
+.modaali-huomio {
+  font-size: 0.88rem;
+  margin-top: 1rem;
+  opacity: 0.8;
+}
+
+.modaali-nappi {
+  margin-top: 1.5rem;
+  padding: 0.7rem 1.8rem;
+  border: 1px solid var(--kynttila);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--kynttila);
+  font-family: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.modaali-nappi:hover {
+  background: var(--kynttila);
+  color: var(--yo-ala);
+}

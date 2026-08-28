@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { API_URL } from '../api'
+import Tietomodaali from './Tietomodaali'
 import './Paasyportti.css'
 
 // Pääsyportti: kysyy pääsykoodin ennen kuin Väinö tulee näkyviin.
@@ -8,6 +9,7 @@ function Paasyportti({ onAvattu }) {
   const [koodi, setKoodi] = useState('')
   const [virhe, setVirhe] = useState('')
   const [tarkistaa, setTarkistaa] = useState(false)
+  const [naytaTiedot, setNaytaTiedot] = useState(false)
 
   const tarkista = async () => {
     if (!koodi.trim()) return
@@ -58,7 +60,13 @@ function Paasyportti({ onAvattu }) {
           {tarkistaa ? 'Hetkinen…' : 'Astu sisään'}
         </button>
         {virhe && <p className="portti-virhe">{virhe}</p>}
+
+        <button className="portti-linkki" onClick={() => setNaytaTiedot(true)}>
+          Tietoa palvelusta
+        </button>
       </div>
+
+      {naytaTiedot && <Tietomodaali onSulje={() => setNaytaTiedot(false)} />}
     </div>
   )
 }
