@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useLayoutEffect } from 'react'
 import Vaino from './components/Vaino'
 import Paasyportti from './components/Paasyportti'
 import { aanitaJaTunnista } from './utils/puheentunnistus'
@@ -11,6 +11,15 @@ function App() {
   const [teksti, setTeksti] = useState('Paina nappia ja juttele kanssani.')
   const [suunAvaus, setSuunAvaus] = useState(0)
   const historia = useRef([])
+
+  const tekstiRef = useRef(null)
+
+  useLayoutEffect(() => {
+    if (tekstiRef.current) {
+      tekstiRef.current.scrollTop = tekstiRef.current.scrollHeight
+    }
+  }, [teksti])
+
 
   // Sessiotunnus myös refissä, jotta pyynnöt lukevat aina tuoreimman arvon
   // (ei jää jumiin vanhaan closure-arvoon).
@@ -147,7 +156,7 @@ function App() {
   return (
     <div className="vaino-sivu">
       <Vaino tila={tila} suunAvaus={suunAvaus} />
-      <p className="vaino-teksti">{teksti}</p>
+      <p ref={tekstiRef} className="vaino-teksti">{teksti}</p>
       <button
         className="puhu-nappi"
         onClick={aloitaPuhuminen}

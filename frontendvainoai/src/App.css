@@ -50,6 +50,8 @@
   position: relative;
   z-index: 2;
   max-width: 620px;
+  max-height: 120px;
+  overflow-y: auto;
   margin: 0 2rem;
   text-align: center;
   font-size: 1.7rem;
@@ -88,4 +90,27 @@
   cursor: default;
   border-color: var(--teksti-himmea);
   color: var(--teksti-himmea);
+}
+
+.vaino-teksti::-webkit-scrollbar {
+  width: 5px;
+}
+
+.vaino-teksti::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.vaino-teksti::-webkit-scrollbar-thumb {
+  background: var(--kynttila);
+  border-radius: 10px;
+  opacity: 0.5;
+}
+
+.vaino-teksti::-webkit-scrollbar-thumb:hover {
+  background: var(--kynttila);
+}
+
+.vaino-teksti {
+  scrollbar-width: thin;
+  scrollbar-color: var(--kynttila) transparent;
 }
