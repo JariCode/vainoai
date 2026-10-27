@@ -78,8 +78,4 @@ desktop.ini
 .node_repl_history
 .npm
 
-# ---- Lock-tiedostot ----
-package-lock.json
-**/package-lock.json
-
 .htaccess
